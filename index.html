@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Station (MQTT WebSockets)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        .container { width: 300px; margin: auto; padding: 20px; border: 2px solid #007BFF; border-radius: 10px; background: #f4f4f4; }
+        h2 { color: #007BFF; }
+        .data { font-size: 24px; font-weight: bold; color: #333; }
+        canvas { max-width: 600px; margin: auto; }
+    </style>
+</head>
+<body>
+    <h2>MQTT Weather Station</h2>
+    <div class="container">
+        <p>Temperature: <span id="temp" class="data">--</span> °C</p>
+        <p>Humidity: <span id="humidity" class="data">--</span> %</p>
+    </div>
+
+    <canvas id="weatherChart"></canvas>
+
+    <script>
+        async function fetchData() {
+            const response = await fetch("http://127.0.0.1:8000/data");
+            const data = await response.json();
+            
+            const timestamps = data.map(entry => new Date(entry.timestamp).toLocaleTimeString());
+            const temperatures = data.map(entry => entry.temperature);
+            const humidities = data.map(entry => entry.humidity);
+    
+            const ctx = document.getElementById("weatherChart").getContext("2d");
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: timestamps,
+                    datasets: [
+                        {
+                            label: "Temperature (°C)",
+                            data: temperatures,
+                            borderColor: "red",
+                            fill: false
+                        },
+                        {
+                            label: "Humidity (%)",
+                            data: humidities,
+                            borderColor: "blue",
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: "Time" } },
+                        y: { title: { display: true, text: "Value" } }
+                    }
+                }
+            });
+        }
+
+        async function fetchAverageData() {
+            const response = await fetch("http://127.0.0.1:8000/average_data");
+            const data = await response.json();
+            document.getElementById("temp").textContent = data.temperature.toFixed(2);
+            document.getElementById("humidity").textContent = data.humidity.toFixed(2);
+        }
+
+        setInterval(fetchData, 5000);
+        setInterval(fetchAverageData, 5000);
+        fetchData();
+        fetchAverageData();
+    </script>
+    
+</body>
+</html>
